@@ -2,16 +2,16 @@
    1. VARIABLES ET CONFIGURATION DE BASE
    ========================================================================== */
 :root {
-    --bg-gradient: linear-gradient(135deg, #1a0a12 0%, #3d0a2b 50%, #C4006E 100%);
-    --primary: #E91E8C;
-    --primary-glow: rgba(233, 30, 140, 0.4);
-    --secondary: #C4006E;
-    --accent: #FF6EC7;
+      --bg-gradient: linear-gradient(135deg, #1a0b2e 0%, #3d0a25 50%, #E8007D 100%);
+      --primary: #E8007D;
+      --primary-glow: rgba(232, 0, 125, 0.4);
+      --secondary: #C8006A;
+      --accent: #FBDCEA;
     --text-main: #ffffff;
-    --text-muted: #f5b8d8;
-    --glass-bg: rgba(233, 30, 140, 0.08);
-    --glass-border: rgba(233, 30, 140, 0.25);
-    --glass-shadow: rgba(196, 0, 110, 0.37);
+      --text-muted: #F9B8D4;
+      --glass-bg: rgba(232, 0, 125, 0.08);
+      --glass-border: rgba(232, 0, 125, 0.25);
+      --glass-shadow: rgba(200, 0, 106, 0.37);
   --radius-lg: 20px;
   --radius-md: 12px;
   --transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
