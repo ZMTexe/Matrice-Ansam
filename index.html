@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANSAM — Matrice d'onboarding v3</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Style pour l'écran de verrouillage */
+    .lock-screen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 9999; transition: opacity 0.5s ease;
+    }
+    .lock-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 40px; border-radius: 20px; text-align: center;
+      backdrop-filter: blur(20px); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+    .lock-box h2 { margin-bottom: 20px; color: #fff; font-size: 20px; }
+    .lock-box input {
+      padding: 12px 20px; width: 260px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2);
+      color: #fff; text-align: center; font-size: 16px; outline: none;
+      margin-bottom: 15px; transition: all 0.3s;
+    }
+    .lock-box input:focus { border-color: #22d3ee; box-shadow: 0 0 10px rgba(34, 211, 238, 0.2); }
+    .lock-btn {
+      padding: 12px 30px; background: linear-gradient(90deg, #6366f1, #a855f7);
+      border: none; border-radius: 12px; color: #fff; font-weight: 600;
+      cursor: pointer; transition: all 0.3s;
+    }
+    .lock-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(129,140,248,0.4); }
+    .error-msg { color: #ef4444; font-size: 13px; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+
+<div id="lockScreen" class="lock-screen">
+  <div class="lock-box">
+    <div style="font-size: 40px; margin-bottom: 10px;">🔐</div>
+    <h2>Accès Restreint — ANSAM</h2>
+    <p style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">Veuillez saisir le mot de passe de la matrice</p>
+    <input type="password" id="passkey" placeholder="••••••••" onkeydown="if(event.key==='Enter') checkAccess()">
+    <br>
+    <button class="lock-btn" onclick="checkAccess()">Se connecter</button>
+    <div id="errorMsg" class="error-msg">Mot de passe incorrect.</div>
+  </div>
+</div>
+
+<div class="app" id="appContent" style="display:none;">
+  <div class="header">
+    <div>
+      <h1>ANSAM — Matrice d'onboarding</h1>
+      <p>Listes de distribution · Boîtes partagées · Outils · Licences · Check-list | v3.0</p>
+    </div>
+    <div class="header-badge">v3.0 — Juin 2026</div>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <label>Équipe / Poste / Tribu</label>
+      <select id="sel" onchange="render()">
+        <option value="">— Sélectionner une équipe —</option>
+        <option>Service Desk</option>
+        <option>SDM (Service Delivery Manager)</option>
+        <option>TIS (Tribe Infra)</option>
+        <option>TNA (Tribe Network)</option>
+        <option>TWS (Tribe Workplace)</option>
+        <option>TMS (Tribe Microsoft)</option>
+        <option>Cyber</option>
+        <option>TITAS (IT Tool)</option>
+        <option>TLA (Tribe Linux)</option>
+        <option>TAM (Technical Account Manager)</option>
+        <option>DIR (Direction)</option>
+        <option>BC (Business Consultant)</option>
+        <option>BM (Business Manager)</option>
+        <option>RH (Ressources Humaines)</option>
+        <option>Data Analyse</option>
+        <option>Finance</option>
+        <option>Stagiaire / Apprenti</option>
+        <option>Consultant Délégation</option>
+        <option>PRJ (Projet) Netsec</option>
+        <option>PRJ (Projet) Infra</option>
+        <option>Recrutement</option>
+        <option>Factory</option>
+        <option>Novatix (IA)</option>
+      </select>
+    </div>
+    
+    <div class="ctrl-group" id="fwrap" style="display:none">
+      <label>Filtrer la matrice</label>
+      <div class="filter-btns">
+        <button class="fbtn active" onclick="setF('all',this)">Tout</button>
+        <button class="fbtn" onclick="setF('DL',this)">DL</button>
+        <button class="fbtn" onclick="setF('BAL',this)">Boîtes partagées</button>
+        <button class="fbtn" onclick="setF('Outil',this)">Outils Tech</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="tabwrap" style="display:none">
+      <div class="tabs">
+        <button class="tab active" onclick="setTab('matrix',this)">Matrice accès</button>
+        <button class="tab" onclick="setTab('licences',this)">🪪 Licences Microsoft</button>
+        <button class="tab" onclick="setTab('checklist',this)">Check-list onboarding</button>
+        <button class="tab" onclick="setTab('legend',this)">📖 Légende & Rôles</button>
+      </div>
+    </div>
+    
+    <div id="content">
+      <div class="empty">
+        <div class="empty-icon">👤</div>
+        <p>Sélectionnez une équipe pour afficher la matrice d'onboarding</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// CONFIGURATION DE LA SÉCURITÉ LOCALISÉE
+const ADMIN_PASSWORD = "Ansam2026!"; 
+
+function checkAccess() {
+  const input = document.getElementById('passkey').value;
+  const error = document.getElementById('errorMsg');
+  if (input === ADMIN_PASSWORD) {
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    sessionStorage.setItem('matrice_auth', 'true');
+  } else {
+    error.style.display = 'block';
+    document.getElementById('passkey').value = '';
+  }
+}
+
+window.onload = function() {
+  if (sessionStorage.getItem('matrice_auth') === 'true') {
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+  }
+}
+
+// Helpers de construction des objets
+const DL  = (n,m,eq)   => ({item:n, mail:m, type:"DL",  valeur:"O", note:"Membres: "+eq});
+const BAL = (n,m,desc) => ({item:n, mail:m, type:"BAL", valeur:"O", note:desc});
+const T   = (n,v,note) => ({item:n, mail:"",   type:"Outil", valeur:v, note:note});
+const L   = (n,v,note) => ({item:n, type:"Licence", valeur:v, note:note});
+
+// BASE DE DONNÉES COMPLÈTE AVEC TOUTES LES TRIBUS ET EQUIPES
+const DATA = {
+  "Service Desk": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      DL("&IXC_HD_HELPDESK","&IXC_HD_HELPDESK@ixion.ch","SD, SDM, TAM, TIS"),
+      DL("&Operations","operations@ixionservices.onmicrosoft.com","Toutes Tribus Tech + SD"),
+      DL("All-OPS","all-ops@ansam.ch","Toutes Tribus Tech + SD"),
+      DL("ServiceDesk (DL)","frontdesk@ansam.ch","SD"),
+      BAL("ANSAM HelpDesk","help@ansam.ch","Point d'entrée principal support client"),
+      BAL("Service Desk ANSAM","servicedesk@ansam.ch","Boîte d'équipe Helpdesk"),
+      BAL("Shifts OPS","shift_ops@ansam.ch","Suivi des plannings et rotations"),
+      T("Compte AD (ansamXXX)","U","Compte d'accès générique"),
+      T("ID 3CX","O","Téléphonie logicielle softphone"),
+      T("RDM (Remote Desktop Manager)","U","Accès aux fiches serveurs"),
+      T("KeePass / PAM","O","Gestion sécurisée des mots de passe admin")
+    ],
+    licences: [
+      L("Microsoft 365 F3","U","Licence économique Frontline / Shifts"),
+      L("Microsoft Teams EEA","O","Collaboration de base"),
+      L("Microsoft Teams Phone Resource Account","O","Gestion des files d'attente téléphoniques")
+    ]
+  },
+  "SDM (Service Delivery Manager)": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      DL("&IXC_ESCALADE_1_2_3","escalade@ixion.ch","SDM Escalades"),
+      DL("DL_Team_SDM","DL_Team_SDM@ansam.ch","SDM uniquement"),
+      BAL("Equipe SDM ANSAM","equipe-sdm@ansam.ch","Boîte aux lettres partagée SDM"),
+      T("Compte AD (ansamXXX)","U","Accès réseau de base"),
+      T("JIRA Suite","U","Supervision des SLAs"),
+      T("Confluence / Doc","U","Écriture des procédures cadres")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Sécurité, conformité et bureautique"),
+      L("Microsoft Teams EEA","O","Outil de communication standard"),
+      L("Microsoft 365 Copilot","U","Licence IA pour résumés des meetings clients"),
+      L("Planner and Project Plan 5","U","Planification portefeuilles de projets clients")
+    ]
+  },
+  "TIS (Tribe Infra)": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      DL("&Operations","operations@ixionservices.onmicrosoft.com","Toutes Tribus Tech"),
+      DL("All-OPS","all-ops@ansam.ch","Toutes Tribus Tech"),
+      BAL("Tribe Infra BAL","infra@ansam.ch","Boîte partagée ingénieurs infrastructure"),
+      T("Compte AD (ansamXXX)","A","Droits élevés requis"),
+      T("RDM (Remote Desktop Manager)","A","Droits d'édition sur les connexions serveurs"),
+      T("KeePass / PAM Privilégié","A","Accès aux coffres forts serveurs critiques")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","A","Supervision sécurité infra et conformité"),
+      L("Microsoft Teams EEA","O","Communication d'équipe"),
+      L("Visio Plan 2","U","Modélisation d'architectures virtuelles")
+    ]
+  },
+  "TNA (Tribe Network)": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      DL("&Operations","operations@ixionservices.onmicrosoft.com","Toutes Tribus Tech"),
+      BAL("Tribe Network","netsec@ansam.ch","Boîte d'équipe Réseau & Sécurité"),
+      T("Compte AD (ansamXXX)","U","Accès réseau standard"),
+      T("RDM Network profiles","U","Accès switchs, routeurs et firewalls")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Sécurité avancée"),
+      L("Microsoft Teams EEA","O","Collaboration"),
+      L("Visio Plan 2","A","Cartographie des topologies réseaux")
+    ]
+  },
+  "TWS (Tribe Workplace)": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      DL("All-OPS","all-ops@ansam.ch","Toutes Tribus Tech"),
+      BAL("Tribe Workplace","workplace@ansam.ch","Gestion du parc utilisateur et masterisation")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Gestion via Microsoft Intune / Endpoint Manager"),
+      L("Microsoft Teams EEA","O","Collaboration"),
+      L("App Connect","U","Packaging des apps d'entreprise")
+    ]
+  },
+  "TMS (Tribe Microsoft)": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      DL("All-OPS","all-ops@ansam.ch","Toutes Tribus Tech"),
+      BAL("Tribe Microsoft","microsoft@ansam.ch","Spécialistes Cloud et Azure")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","A","Droits Global Admin requis"),
+      L("Microsoft Teams EEA","O","Collaboration"),
+      L("Rights Management Adhoc","O","Chiffrement et protection des données"),
+      L("Microsoft Stream Trial","O","Plateforme vidéo pour démos techniques")
+    ]
+  },
+  "Cyber": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      DL("P1","p1@ansam.ch","Alertes critiques infrastructure"),
+      BAL("Cyber Security Alertes","cybersecurity@ansam.ch","Boîte de réception SOC / Alertes"),
+      T("KeePass / PAM Sec","A","Contrôle des mots de passe à privilèges")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","A","Accès complet Defender XDR et Purview"),
+      L("Microsoft Teams EEA","O","Alertes Teams sécurisées"),
+      L("Rights Management Adhoc","A","Supervision du chiffrement")
+    ]
+  },
+  "TITAS (IT Tool)": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      BAL("TITAS Tools","titas@ansam.ch","Boîte d'ingénierie des outils internes")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Socle technique"),
+      L("Microsoft Teams EEA","O","Collaboration"),
+      L("Power Apps Premium","A","Développement d'applications internes complexes"),
+      L("Microsoft Power Automate Free","A","Création de workflows inter-applicatifs"),
+      L("Power Pages vTrial for Makers","A","Conception de portails web connectés"),
+      L("Microsoft Copilot Studio Viral Trial","A","Conception et gestion des bots IA"),
+      L("App Connect","A","Administration des passerelles d'intégration")
+    ]
+  },
+  "TLA (Tribe Linux)": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      DL("&Operations","operations@ixionservices.onmicrosoft.com","Toutes Tribus Tech"),
+      BAL("Tribe Linux","linux@ansam.ch","Support OpenSource et Linux"),
+      T("Compte AD (ansamXXX)","U","Liaison LDAP / Kerberos"),
+      T("RDM Linux CLI","U","Gestion des clés privées SSH")
+    ],
+    licences: [
+      L("Microsoft 365 F3","U","Accès bureautique standard web")
+    ]
+  },
+  "TAM (Technical Account Manager)": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      DL("Managers Direct","manager.direct@ansam.ch","TAM, SDM, DIR"),
+      BAL("Equipe TAM","tam@ansam.ch","Filière Conseil technique de compte"),
+      T("JIRA Service Management","L","Suivi de l'état des parcs clients")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Bureautique lourde"),
+      L("Microsoft Teams EEA","O","Appels clients"),
+      L("Microsoft 365 Copilot","U","Analyse par IA des rapports techniques"),
+      L("Visio Plan 2","U","Consultation de schémas d'architectures")
+    ]
+  },
+  "DIR (Direction)": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      DL("Management OPS","management_ops@ansam.ch","Filtre direction opérationnelle"),
+      BAL("Direction ANSAM","direction@ansam.ch","Boîte confidentielle de direction")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Sécurité maximale de la boîte"),
+      L("Microsoft Teams EEA","O","Collaboration"),
+      L("Microsoft Teams Premium - Legacy","O","Réunions confidentielles"),
+      L("Microsoft 365 Copilot","U","Synthèses de documents stratégiques"),
+      L("Dynamics 365 Business Central for IWs","U","Dashboards financiers")
+    ]
+  },
+  "BC (Business Consultant)": {
+    acces: [
+      DL("Business","business@ansam.ch","BC, BM, DIR"),
+      BAL("Consulting","consultants@ansam.ch","Boîte d'équipe avant-vente")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Outils Office complets"),
+      L("Microsoft Teams EEA","O","Réunions"),
+      L("Microsoft 365 Copilot","U","Aide à la rédaction d'offres"),
+      L("Visio Plan 2","U","Schématisation d'architectures d'avant-vente"),
+      L("Dynamics 365 Business Central for IWs","L","Suivi des catalogues d'offres")
+    ]
+  },
+  "BM (Business Manager)": {
+    acces: [
+      DL("Business","business@ansam.ch","BC, BM, DIR"),
+      BAL("Sales Ansam","sales@ansam.ch","Suivi du pipe commercial global")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Gestion messagerie avancée"),
+      L("Microsoft Teams EEA","O","Échanges commerciaux"),
+      L("Microsoft Teams Premium - Legacy","U","Résumé automatique des ventes par l'IA"),
+      L("Dynamics 365 Business Central for IWs","A","Création de devis et factures"),
+      L("Microsoft 365 Copilot","U","Aide à la prospection")
+    ]
+  },
+  "RH (Ressources Humaines)": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      BAL("RH ANSAM","rh@ansam.ch","Boîte confidentielle Ressources Humaines")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Bureautique et conformité"),
+      L("Microsoft Teams EEA","O","Entretiens"),
+      L("Microsoft Viva Employee Communications...","U","Engagement interne et onboarding"),
+      L("Microsoft Power Automate Free","U","Automatisation des e-mails RH")
+    ]
+  },
+  "Data Analyse": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      BAL("Data Team","data@ansam.ch","Équipe d'analyse de données")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Bureautique Excel"),
+      L("Microsoft Teams EEA","O","Collaboration"),
+      L("Microsoft Fabric (Free)","A","Entrepôts de données et ETL"),
+      L("Power Apps Premium","U","Création de formulaires de collecte"),
+      L("Microsoft 365 Copilot","U","Analyse assistée par IA de fichiers volumineux")
+    ]
+  },
+  "Finance": {
+    acces: [
+      DL("Alertes finances iXcenter","AlertesfinancesiXcenter@ixion.ch","Comptabilité"),
+      BAL("Finance ANSAM","finance@ansam.ch","Facturation et écritures comptables")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Bureautique lourde Excel"),
+      L("Microsoft Teams EEA","O","Collaboration"),
+      L("Dynamics 365 Business Central for IWs","A","Clôtures comptables et suivi budgétaire"),
+      L("Microsoft 365 Copilot","U","Rapports de tendances financières")
+    ]
+  },
+  "Stagiaire / Apprenti": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      T("Compte AD (ansamXXX)","U","Accès standard restreint")
+    ],
+    licences: [
+      L("Microsoft 365 F3","U","Accès économique e-mail web"),
+      L("Microsoft Teams EEA","O","Communication interne")
+    ]
+  },
+  "Consultant Délégation": {
+    acces: [
+      DL("All-OPS","all-ops@ansam.ch","Accès selon affectation"),
+      BAL("Délégation BAL","delegation@ansam.ch","Suivi des prestations de longue durée")
+    ],
+    licences: [
+      L("Microsoft 365 F3","U","Accès messagerie web standard"),
+      L("Microsoft Teams EEA","O","Liaison avec l'équipe")
+    ]
+  },
+  "PRJ (Projet) Netsec": {
+    acces: [
+      DL("&PMO","_pmo@ixionservices.onmicrosoft.com","Gestion de projets"),
+      BAL("Projets Netsec","projects.netsec@ansam.ch","Boîte projets Réseau & Sécurité")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Bureautique projets"),
+      L("Microsoft Teams EEA","O","Réunions de déploiement"),
+      L("Planner and Project Plan 5","A","Diagrammes de Gantt et affectation ressources"),
+      L("Visio Plan 2","U","Lecture d'architectures de sécurité")
+    ]
+  },
+  "PRJ (Projet) Infra": {
+    acces: [
+      DL("&PMO","_pmo@ixionservices.onmicrosoft.com","Gestion de projets"),
+      BAL("Projets Infra","projects.infra@ansam.ch","Boîte projets Systèmes & Stockage")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Bureautique"),
+      L("Microsoft Teams EEA","O","Réunions de suivi"),
+      L("Planner and Project Plan 5","A","Gestion de portefeuilles de déploiement"),
+      L("Visio Plan 2","U","Suivi des plans de migration VM")
+    ]
+  },
+  "Recrutement": {
+    acces: [
+      DL("Business","business@ansam.ch","Alignement profils"),
+      BAL("Jobs ANSAM","jobs@ansam.ch","Réception et tri des CVs")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Conformité données privées candidats"),
+      L("Microsoft Teams EEA","O","Entretiens à distance"),
+      L("Microsoft Viva Employee Communications...","U","Parcours d'intégration culturelle"),
+      L("Microsoft Power Automate Free","U","Accusés de réception automatiques")
+    ]
+  },
+  "Factory": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      BAL("Factory Orders","factory@ansam.ch","Commandes matériels et licences clients")
+    ],
+    licences: [
+      L("Microsoft 365 F3","U","Utilisation sur tablettes logistiques d'entrepôt"),
+      L("Microsoft Teams EEA","O","Liaison achats"),
+      L("Dynamics 365 Business Central for IWs","U","Bons de commande et suivi des stocks"),
+      L("Power Apps Premium","U","Application interne de scannage matériel")
+    ]
+  },
+  "Novatix (IA)": {
+    acces: [
+      DL("&Ansam_Tous","_Ansam_Tous3615@ixionservices.onmicrosoft.com","Toutes"),
+      BAL("Novatix Team","contact@novatix.ch","Équipe dédiée au pôle IA")
+    ],
+    licences: [
+      L("Microsoft 365 E5 EEA (no Teams)","U","Bureautique"),
+      L("Microsoft Teams EEA","O","Collaboration"),
+      L("Microsoft 365 Copilot","A","Tests de prompts et d'extensions IA"),
+      L("Microsoft Copilot Studio Viral Trial","A","Développement d'agents conversationnels IA"),
+      L("Microsoft Fabric (Free)","U","Modélisation de données pour Machine Learning")
+    ]
+  }
+};
+
+let currentFilter = 'all';
+let currentTab = 'matrix';
+
+function setF(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function setTab(t, btn) {
+  currentTab = t;
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function render() {
+  const team = document.getElementById('sel').value;
+  const content = document.getElementById('content');
+  const fwrap = document.getElementById('fwrap');
+  
+  if (!team) {
+    fwrap.style.display = 'none';
+    document.getElementById('tabwrap').style.display = 'none';
+    content.innerHTML = `<div class="empty"><div class="empty-icon">👤</div><p>Sélectionnez une équipe pour afficher la matrice d'onboarding</p></div>`;
+    return;
+  }
+
+  document.getElementById('tabwrap').style.display = 'block';
+  fwrap.style.display = (currentTab === 'matrix') ? 'block' : 'none';
+
+  let rawTeamData = DATA[team] || { acces: [], licences: [] };
+
+  if (currentTab === 'matrix') {
+    let list = rawTeamData.acces.filter(x => currentFilter === 'all' || x.type === currentFilter);
+    let html = `
+      <div class="stats">
+        <div class="stat"><div class="stat-n">${rawTeamData.acces.filter(x=>x.type==='DL').length}</div><div class="stat-l">Listes DL</div></div>
+        <div class="stat"><div class="stat-n">${rawTeamData.acces.filter(x=>x.type==='BAL').length}</div><div class="stat-l">Boîtes partagées</div></div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Type</th><th>Ressource / Nom</th><th>Valeur</th><th>Notes / Rôles requis</th></tr></thead>
+          <tbody>`;
+
+    list.forEach(x => {
+      let badgeType = x.type === 'DL' ? 'tdl' : (x.type === 'BAL' ? 'tbal' : 'tout');
+      let valClass = x.valeur === 'A' ? 'bA' : (x.valeur === 'U' ? 'bU' : 'bO');
+      html += `<tr>
+        <td><span class="${badgeType}">${x.type}</span></td>
+        <td style="font-weight:600; color:#fff">${x.item} ${x.mail ? `<br><small style="font-weight:400; color:var(--text-muted)">${x.mail}</small>` : ''}</td>
+        <td><span class="badge ${valClass}">${x.valeur}</span></td>
+        <td style="color:var(--text-muted)">${x.note}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    content.innerHTML = html;
+    
+  } else if (currentTab === 'licences') {
+    let html = `
+      <div style="margin-bottom:20px;">
+        <h3 style="color:var(--accent); font-size:16px;">🪪 Licences Microsoft Cloud à attribuer :</h3>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Abonnement / Licence</th><th>Type Attribution</th><th>Usage attendu</th></tr></thead>
+          <tbody>`;
+
+    rawTeamData.licences.forEach(x => {
+      let valClass = x.valeur === 'A' ? 'bA' : (x.valeur === 'U' ? 'bU' : 'bO');
+      let labelType = x.valeur === 'A' ? 'Admin / Créateur' : (x.valeur === 'U' ? 'Utilisateur' : 'Obligatoire');
+      html += `<tr>
+        <td style="font-weight:600; color:#fff; padding:16px;"><span class="tout" style="margin-right:10px;">Licence</span> ${x.item}</td>
+        <td><span class="badge ${valClass}">${x.valeur}</span> <small style="color:var(--text-muted); margin-left:5px;">${labelType}</small></td>
+        <td style="color:var(--text-muted)">${x.note}</td>
+      </tr>`;
+    });
+    
+    if(rawTeamData.licences.length === 0){
+      html += `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Aucune licence spécifique enregistrée pour ce poste.</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+    content.innerHTML = html;
+
+  } else if (currentTab === 'checklist') {
+    let fullList = [...rawTeamData.acces, ...rawTeamData.licences];
+    let html = `
+      <div class="prog-wrap">
+        <div class="prog-top"><span class="prog-title">Progression</span><span class="prog-pct" id="pct">0%</span></div>
+        <div class="pbar"><div class="pfill" id="pfill" style="width:0%"></div></div>
+      </div>
+      <div class="chklist">`;
+      
+    fullList.forEach((x, i) => {
+      html += `
+        <label class="chk-item" id="lbl_${i}">
+          <input type="checkbox" onchange="toggleChk(this, ${i})">
+          <span class="chk-lbl" style="color:#fff">${x.item} <small style="color:var(--text-muted)">(${x.type || 'Licence'})</small></span>
+        </label>`;
+    });
+    content.innerHTML = html + `</div>`;
+
+  } else if (currentTab === 'legend') {
+    content.innerHTML = `
+      <div class="legend-section">
+        <h2>Signification des Valeurs (Droits d'accès)</h2>
+        <div class="legend-grid">
+          <div class="legend-card"><span class="badge bO">O</span><div class="legend-info"><h3>Oui / Actif d'office</h3><p>Configuration par défaut, membre obligatoire.</p></div></div>
+          <div class="legend-card"><span class="badge bU">U</span><div class="legend-info"><h3>User (Utilisateur Standard)</h3><p>Compte ou licence attribué de manière nominative.</p></div></div>
+          <div class="legend-card"><span class="badge bA">A</span><div class="legend-info"><h3>Admin / Expert Privilégié</h3><p>Accès haut niveau aux consoles d'administration.</p></div></div>
+        </div>
+      </div>`;
+  }
+}
+
+function toggleChk(cb, id) {
+  const lbl = document.getElementById(`lbl_${id}`);
+  if (cb.checked) { lbl.classList.add('done'); } else { lbl.classList.remove('done'); }
+  const boxes = document.querySelectorAll('.chk-item input');
+  let checked = 0;
+  boxes.forEach(b => { if(b.checked) checked++; });
+  const pct = boxes.length > 0 ? Math.round((checked / boxes.length) * 100) : 0;
+  document.getElementById('pct').innerText = `${pct}%`;
+  document.getElementById('pfill').style.width = `${pct}%`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,354 @@
+/* ==========================================================================
+   1. VARIABLES ET CONFIGURATION DE BASE
+   ========================================================================== */
+:root {
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+  --primary: #818cf8;
+  --primary-glow: rgba(129, 140, 248, 0.4);
+  --secondary: #c084fc;
+  --accent: #22d3ee;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: rgba(0, 0, 0, 0.37);
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-gradient);
+  background-attachment: fixed; /* Évite que le fond coupe au scroll */
+  color: var(--text-main);
+  min-height: 100vh;
+  padding: 30px 15px;
+  overflow-x: hidden;
+}
+
+/* ==========================================================================
+   2. ANIMATIONS INTERACTIVES
+   ========================================================================== */
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.98) translateY(15px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes backgroundMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ==========================================================================
+   3. CONTENEURS STRUCTURELS (Style Glassmorphism)
+   ========================================================================== */
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  animation: fadeInScale 0.5s ease-out forwards;
+}
+
+.header, .controls, .main {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 25px 50px -12px var(--glass-shadow);
+  margin-bottom: 20px;
+}
+
+/* Header */
+.header { 
+  padding: 24px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  flex-wrap: wrap; 
+  gap: 15px; 
+}
+
+.header h1 {
+  font-size: 26px;
+  font-weight: 800;
+  background: linear-gradient(to right, var(--primary), var(--secondary), var(--accent));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: backgroundMove 4s linear infinite;
+}
+
+.header p { 
+  font-size: 13px; 
+  color: var(--text-muted); 
+  margin-top: 5px; 
+}
+
+.header-badge {
+  background: rgba(192, 132, 252, 0.15);
+  border: 1px solid rgba(192, 132, 252, 0.3);
+  color: var(--secondary);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Barre de Contrôles / Sélecteurs */
+.controls { 
+  padding: 20px 24px; 
+  display: flex; 
+  gap: 20px; 
+  flex-wrap: wrap; 
+  align-items: flex-end; 
+}
+
+.ctrl-group { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 8px; 
+}
+
+.ctrl-group label { 
+  font-size: 11px; 
+  color: var(--text-muted); 
+  font-weight: 700; 
+  text-transform: uppercase; 
+  letter-spacing: 1px; 
+}
+
+/* Menu Déroulant (Select) */
+select {
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  background: rgba(15, 23, 42, 0.6);
+  color: #fff;
+  min-width: 280px;
+  cursor: pointer;
+  outline: none;
+  transition: var(--transition-smooth);
+}
+
+select:focus { 
+  border-color: var(--secondary); 
+  box-shadow: 0 0 15px rgba(192, 132, 252, 0.2); 
+}
+
+select option { 
+  background: #1e1b4b; 
+  color: #fff; 
+}
+
+/* Boutons de Filtres */
+.filter-btns { 
+  display: flex; 
+  gap: 8px; 
+  flex-wrap: wrap; 
+}
+
+.fbtn {
+  padding: 10px 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  transition: var(--transition-smooth);
+}
+
+.fbtn:hover { 
+  border-color: var(--secondary); 
+  color: #fff; 
+  background: rgba(255, 255, 255, 0.1); 
+  transform: translateY(-2px); 
+}
+
+.fbtn.active {
+  background: linear-gradient(90deg, #6366f1, #a855f7);
+  color: #fff;
+  border: 1px solid transparent;
+  box-shadow: 0 4px 15px var(--primary-glow);
+}
+
+/* ==========================================================================
+   4. ZONE D'AFFICHAGE PRINCIPALE (Main, Tabs, Écran vide)
+   ========================================================================== */
+.main { 
+  padding: 24px; 
+}
+
+.empty { 
+  padding: 60px 20px; 
+  text-align: center; 
+  color: var(--text-muted); 
+}
+
+.empty-icon { 
+  font-size: 50px; 
+  margin-bottom: 15px; 
+  opacity: 0.5; 
+}
+
+/* Onglets Navigation (Tabs) */
+.tabs { 
+  display: flex; 
+  border-bottom: 1px solid var(--glass-border); 
+  margin-bottom: 24px; 
+  gap: 10px; 
+}
+
+.tab {
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-bottom: 3px solid transparent;
+  background: none; 
+  border-top: none; border-left: none; border-right: none;
+  transition: var(--transition-smooth);
+}
+
+.tab:hover { color: #fff; }
+.tab.active { 
+  color: var(--accent); 
+  border-bottom-color: var(--accent); 
+  text-shadow: 0 0 10px rgba(34, 211, 238, 0.3); 
+}
+
+/* Cartes Statistiques temporaires */
+.stats { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); 
+  gap: 15px; 
+  margin-bottom: 24px; 
+}
+
+.stat {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 16px 12px;
+  text-align: center;
+  border-left: 4px solid var(--secondary);
+  transition: var(--transition-smooth);
+}
+
+.stat:hover { 
+  background: rgba(255, 255, 255, 0.04); 
+  transform: translateY(-2px); 
+}
+
+.stat-n { font-size: 24px; font-weight: 800; color: #fff; }
+.stat-l { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+/* ==========================================================================
+   5. STYLISATION DES TABLEAUX DYNAMIQUES
+   ========================================================================== */
+.table-wrapper { 
+  overflow-x: auto; 
+  border-radius: var(--radius-md); 
+  border: 1px solid var(--glass-border); 
+  background: rgba(15, 23, 42, 0.4); 
+}
+
+table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  font-size: 13px; 
+}
+
+thead tr { 
+  background: rgba(0, 0, 0, 0.3); 
+}
+
+th { 
+  color: var(--text-muted); 
+  padding: 14px 16px; 
+  text-align: left; 
+  font-weight: 700; 
+  font-size: 11px; 
+  text-transform: uppercase; 
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+td { 
+  padding: 14px 16px; 
+  border-bottom: 1px solid var(--glass-border); 
+  color: #e2e8f0; 
+  vertical-align: middle;
+}
+
+tr:hover td { 
+  background: rgba(255, 255, 255, 0.03); 
+}
+
+/* Configuration des Badges Neon du script */
+.badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+.bO { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.3); }
+
+.tdl { display: inline-block; padding: 4px 8px; background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border-radius: 6px; font-size: 11px; font-weight: bold; }
+.tout { display: inline-block; padding: 4px 8px; background: rgba(34, 211, 238, 0.2); color: #67e8f9; border-radius: 6px; font-size: 11px; font-weight: bold; }
+.tbal { display: inline-block; padding: 4px 8px; background: rgba(236, 72, 153, 0.2); color: #f9a8d4; border-radius: 6px; font-size: 11px; font-weight: bold; }
+
+/* Bouton Premium d'export */
+.export-row { display: flex; justify-content: flex-end; margin-top: 20px; }
+.btn-premium {
+  padding: 12px 24px; font-size: 13px; font-weight: 700; color: #fff;
+  background: linear-gradient(90deg, #6366f1, #a855f7);
+  border: none; border-radius: var(--radius-md); cursor: pointer;
+  transition: var(--transition-smooth); box-shadow: 0 4px 15px var(--primary-glow);
+}
+.btn-premium:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4); }
+
+/* ==========================================================================
+   6. CHECKLIST ET BARRE DE PROGRESSION
+   ========================================================================== */
+.prog-wrap { 
+  margin-bottom: 24px; 
+  background: rgba(0, 0, 0, 0.2); 
+  padding: 16px; 
+  border-radius: var(--radius-md); 
+  border: 1px solid var(--glass-border); 
+}
+
+.prog-top { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.prog-title { font-size: 14px; font-weight: 700; color: #fff; }
+.prog-pct { font-size: 14px; color: var(--accent); font-weight: 800; }
+
+.pbar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+.pfill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.3s ease; }
+
+.chklist { display: flex; flex-direction: column; gap: 8px; }
+.chk-item {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+  background: rgba(255,255,255,0.01); border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border); cursor: pointer; transition: var(--transition-smooth);
+}
+.chk-item:hover { background: rgba(255,255,255,0.04); border-color: var(--secondary); transform: translateX(3px); }
+.chk-item.done { opacity: 0.4; background: rgba(0,0,0,0.2); border-color: transparent; }
+.chk-item.done .chk-lbl { text-decoration: line-through; }
+.chk-item input { width: 18px; height: 18px; accent-color: var(--secondary); cursor: pointer; }
+
+/* ==========================================================================
+   7. RESPONSIVE DESIGN
+   ========================================================================== */
+@media (max-width: 768px) {
+  .controls, .header { flex-direction: column; align-items: stretch; }
+  select { min-width: 100%; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+}
